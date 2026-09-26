@@ -62,6 +62,8 @@ jest.mock('@tensorflow/tfjs', () => {
   }
 })
 
+import { DEFAULT_GENDER_SETTINGS } from '../../src/offscreen/classifiers/GenderClassifier'
+
 jest.mock('@tensorflow/tfjs-backend-wasm', () => ({ setWasmPaths: jest.fn() }))
 
 jest.mock('../../src/offscreen/classifiers/BinaryClassifier', () => ({
@@ -71,6 +73,23 @@ jest.mock('../../src/offscreen/classifiers/BinaryClassifier', () => ({
 jest.mock('../../src/offscreen/classifiers/NsfwjsClassifier', () => ({
   NsfwjsClassifier: jest.fn(() => makeClassifier('MobileNet_v1.2'))
 }))
+
+jest.mock('../../src/offscreen/classifiers/GenderClassifier', () => {
+  const actual = jest.requireActual('../../src/offscreen/classifiers/GenderClassifier')
+  return {
+    ...actual,
+    GenderClassifier: jest.fn().mockImplementation(() => ({
+      load: jest.fn(async () => true),
+      predict: jest.fn(async () => ({
+        predictedClass: 'other',
+        confidence: 0.99,
+        probabilities: { real_male: 0, real_female: 0, anime_male: 0, anime_female: 0, other: 1 },
+        shouldBlur: false
+      })),
+      dispose: jest.fn()
+    }))
+  }
+})
 
 type Listener = (
   message: OffscreenRequest,
@@ -178,7 +197,8 @@ describe('offscreen => model lifecycle', () => {
     expect(savedRestartState()).toEqual({
       filterStrictness: 55,
       trainedModel: 'MobileNet_v1.2',
-      logging: false
+      logging: false,
+      genderFilter: DEFAULT_GENDER_SETTINGS
     })
   })
 

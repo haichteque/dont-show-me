@@ -1,5 +1,6 @@
 import { ILogger } from '../utils/Logger'
 import { TrainedModel } from '../utils/models'
+import { GenderFilterSettings } from './classifiers/GenderClassifier'
 
 // The offscreen document cannot switch the TensorFlow.js backend in place, so it
 // reloads itself onto WASM instead (see restartRealm in offscreen.ts). The
@@ -12,6 +13,7 @@ export type RestartState = {
   filterStrictness: number
   trainedModel: TrainedModel
   logging: boolean
+  genderFilter?: GenderFilterSettings
 }
 
 export const saveRestartState = (storage: Storage, state: RestartState): void => {

@@ -9,9 +9,11 @@ import { TrainedModel } from '../utils/models'
 // It plays the same role the `Model` class did for the queues (`predict` and
 // `setSettings`), but every call is an RPC because a Manifest V3 service worker
 // can't touch the DOM or run the WebGL/WASM model itself.
+import { GenderFilterSettings } from '../offscreen/classifiers/GenderClassifier'
+
 export type IOffscreenModel = {
   predict: (url: string, label?: string) => Promise<boolean>
-  setSettings: (filterStrictness: number, logging: boolean, trainedModel: TrainedModel) => void
+  setSettings: (filterStrictness: number, logging: boolean, trainedModel: TrainedModel, genderFilter?: GenderFilterSettings) => void
 }
 
 // A classification that dies with the offscreen realm, as opposed to one the model
@@ -77,13 +79,14 @@ export class OffscreenModel implements IOffscreenModel {
     })
   }
 
-  public setSettings (filterStrictness: number, logging: boolean, trainedModel: TrainedModel): void {
+  public setSettings (filterStrictness: number, logging: boolean, trainedModel: TrainedModel, genderFilter?: GenderFilterSettings): void {
     const request: OffscreenRequest = {
       target: 'offscreen',
       type: 'SET_SETTINGS',
       filterStrictness,
       logging,
-      trainedModel
+      trainedModel,
+      genderFilter
     }
 
     chrome.runtime.sendMessage(request, () => {

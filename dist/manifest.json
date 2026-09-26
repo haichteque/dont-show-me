@@ -48,7 +48,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["models/*", "images/*"],
+      "resources": ["models/*", "models/**/*", "images/*"],
       "matches": ["<all_urls>"]
     }
   ],

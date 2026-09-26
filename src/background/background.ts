@@ -99,14 +99,14 @@ const initRuntime = async (): Promise<Runtime> => {
   await ensureOffscreenDocument()
 
   const store = await createChromeStore({ createStore })(rootReducer)
-  const { enabled, logging, filterStrictness, trainedModel } = store.getState().settings
+  const { enabled, logging, filterStrictness, trainedModel, genderFilter } = store.getState().settings
   refreshActionBadge(enabled)
 
   const logger = new Logger()
   if (logging === true) logger.enable()
 
   const model = new OffscreenModel()
-  model.setSettings(filterStrictness, logging, trainedModel)
+  model.setSettings(filterStrictness, logging, trainedModel, genderFilter)
 
   const queue = new Queue(model, logger, store)
 
@@ -115,22 +115,29 @@ const initRuntime = async (): Promise<Runtime> => {
   // onto the badge, and push model/strictness/logging to the offscreen document
   // as they change (it swaps the model in place, gated on its prediction chain).
   // Guard on change so per-image statistics ticks don't trigger any of this.
-  let applied = { enabled, logging, filterStrictness, trainedModel }
+  let applied = { enabled, logging, filterStrictness, trainedModel, genderFilter }
   store.subscribe(() => {
     const next = store.getState().settings
     if (next.enabled !== applied.enabled) refreshActionBadge(next.enabled)
 
+    const genderFilterChanged = JSON.stringify(next.genderFilter) !== JSON.stringify(applied.genderFilter)
+
     if (
       next.logging !== applied.logging ||
       next.filterStrictness !== applied.filterStrictness ||
-      next.trainedModel !== applied.trainedModel
+      next.trainedModel !== applied.trainedModel ||
+      genderFilterChanged
     ) {
       if (next.logging) logger.enable()
       else logger.disable()
-      model.setSettings(next.filterStrictness, next.logging, next.trainedModel)
+      model.setSettings(next.filterStrictness, next.logging, next.trainedModel, next.genderFilter)
       // Only a new verdict invalidates cached predictions; a logging toggle
       // doesn't, so don't force re-classification of already-seen images for it.
-      if (next.filterStrictness !== applied.filterStrictness || next.trainedModel !== applied.trainedModel) {
+      if (
+        next.filterStrictness !== applied.filterStrictness ||
+        next.trainedModel !== applied.trainedModel ||
+        genderFilterChanged
+      ) {
         queue.clearCache()
       }
     }
@@ -139,7 +146,8 @@ const initRuntime = async (): Promise<Runtime> => {
       enabled: next.enabled,
       logging: next.logging,
       filterStrictness: next.filterStrictness,
-      trainedModel: next.trainedModel
+      trainedModel: next.trainedModel,
+      genderFilter: next.genderFilter
     }
   })
 
@@ -267,12 +275,12 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
 chrome.runtime.onConnect.addListener(port => port.onDisconnect.addListener(() => {
   getRuntime()
     .then(({ store, logger, model, queue }) => {
-      const { enabled, logging, filterStrictness, trainedModel } = store.getState().settings
+      const { enabled, logging, filterStrictness, trainedModel, genderFilter } = store.getState().settings
       refreshActionBadge(enabled)
 
       if (logging) logger.enable()
       else logger.disable()
-      model.setSettings(filterStrictness, logging, trainedModel)
+      model.setSettings(filterStrictness, logging, trainedModel, genderFilter)
 
       queue.clearCache()
     })

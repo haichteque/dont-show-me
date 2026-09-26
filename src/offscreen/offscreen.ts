@@ -24,6 +24,11 @@ import { withTimeout } from '../utils/withTimeout'
 
 import { BinaryClassifier } from './classifiers/BinaryClassifier'
 import { Classifier } from './classifiers/Classifier'
+import {
+  DEFAULT_GENDER_SETTINGS,
+  GenderClassifier,
+  GenderFilterSettings
+} from './classifiers/GenderClassifier'
 import { NsfwjsClassifier } from './classifiers/NsfwjsClassifier'
 import { readRestartState, saveRestartState } from './restartState'
 
@@ -131,7 +136,8 @@ const restartRealm = (): never => {
   saveRestartState(sessionStorage, {
     filterStrictness: pendingStrictness,
     trainedModel: pendingModelId,
-    logging: pendingLogging
+    logging: pendingLogging,
+    genderFilter: pendingGenderFilter
   })
   location.reload()
 
@@ -145,6 +151,29 @@ let bringingUp = false
 let pendingStrictness = restartState?.filterStrictness ?? DEFAULT_FILTER_STRICTNESS
 let pendingModelId: TrainedModel = restartState?.trainedModel ?? DEFAULT_TRAINED_MODEL
 let pendingLogging = restartState?.logging ?? false
+let pendingGenderFilter: GenderFilterSettings = restartState?.genderFilter ?? DEFAULT_GENDER_SETTINGS
+
+let genderClassifier: GenderClassifier | null = null
+let genderClassifierLoaded = false
+let genderClassifierLoading: Promise<boolean> | null = null
+
+const ensureGenderClassifier = async (): Promise<boolean> => {
+  if (genderClassifierLoaded && genderClassifier !== null) return true
+  if (genderClassifierLoading !== null) return await genderClassifierLoading
+  if (genderClassifier === null) {
+    genderClassifier = new GenderClassifier(logger)
+  }
+  genderClassifierLoading = genderClassifier.load().then(ok => {
+    genderClassifierLoaded = ok
+    genderClassifierLoading = null
+    return ok
+  }).catch(err => {
+    logger.error(err as Error)
+    genderClassifierLoading = null
+    return false
+  })
+  return await genderClassifierLoading
+}
 
 if (pendingLogging) logger.enable()
 
@@ -249,6 +278,9 @@ const ensureUp = (): void => {
   enqueue(async () => {
     try {
       activeClassifier = await bringUpOrFallback(pendingModelId)
+      if (pendingGenderFilter?.enabled) {
+        await ensureGenderClassifier()
+      }
     } catch (error) {
       bringingUp = false // allow a later event to retry from scratch
       throw error
@@ -297,7 +329,7 @@ const loadImage = async (url: string, label: string): Promise<HTMLImageElement> 
   })
 }
 
-const classify = async (url: string, label: string): Promise<boolean> => {
+const classify = async (url: string, label: string): Promise<OffscreenClassifyResponse> => {
   ensureUp()
   const image = await loadImage(url, label)
 
@@ -310,7 +342,27 @@ const classify = async (url: string, label: string): Promise<boolean> => {
     if (activeClassifier === null) throw new Error('Model is not loaded')
     const prediction = activeClassifier.predict(image, label)
     trackPrediction(activeClassifier, prediction)
-    return await withTimeout(prediction, PREDICTION_TIMEOUT, 'Prediction')
+    const isNsfw = await withTimeout(prediction, PREDICTION_TIMEOUT, 'Prediction')
+    if (isNsfw) {
+      return { result: true, reason: 'nsfw' }
+    }
+
+    if (pendingGenderFilter?.enabled) {
+      const loaded = await ensureGenderClassifier()
+      if (loaded && genderClassifier !== null) {
+        const genderPred = await genderClassifier.predict(image, pendingGenderFilter, label)
+        if (genderPred.shouldBlur) {
+          return {
+            result: true,
+            reason: 'gender',
+            gender: genderPred.predictedClass,
+            confidence: genderPred.confidence
+          }
+        }
+      }
+    }
+
+    return { result: false }
   })
 }
 
@@ -325,6 +377,9 @@ chrome.runtime.onMessage.addListener((
     pendingStrictness = message.filterStrictness
     pendingModelId = message.trainedModel
     pendingLogging = message.logging
+    if (message.genderFilter) {
+      pendingGenderFilter = message.genderFilter
+    }
     if (pendingLogging) logger.enable()
     else logger.disable()
 
@@ -333,13 +388,17 @@ chrome.runtime.onMessage.addListener((
       if (activeClassifier === null) return // ensureUp is loading pendingModelId already
       if (activeClassifier.trainedModel !== pendingModelId) await switchTo(pendingModelId)
       else activeClassifier.setSettings({ filterStrictness: pendingStrictness })
+
+      if (pendingGenderFilter?.enabled && !genderClassifierLoaded) {
+        await ensureGenderClassifier()
+      }
     }).catch(() => undefined)
     return
   }
 
   if (message.type === 'CLASSIFY') {
     classify(message.url, message.label ?? message.url)
-      .then(result => sendResponse({ result }))
+      .then(response => sendResponse(response))
       .catch((error: Error) => sendResponse({ result: false, error: error?.message ?? String(error) }))
 
     return true // keep the message channel open for the async response

@@ -51,12 +51,15 @@ export type OffscreenClassifyRequest = {
   label?: string
 }
 
+import { GenderFilterSettings } from '../offscreen/classifiers/GenderClassifier'
+
 export type OffscreenSettingsRequest = {
   target: 'offscreen'
   type: 'SET_SETTINGS'
   filterStrictness: number
   logging: boolean
   trainedModel: TrainedModel
+  genderFilter?: GenderFilterSettings
 }
 
 export type OffscreenRequest = OffscreenClassifyRequest | OffscreenSettingsRequest
@@ -64,14 +67,19 @@ export type OffscreenRequest = OffscreenClassifyRequest | OffscreenSettingsReque
 export type OffscreenClassifyResponse = {
   result: boolean
   error?: string
+  gender?: string
+  confidence?: number
+  reason?: 'nsfw' | 'gender' | 'none'
 }
 
 export class PredictionResponse {
   public readonly result: boolean
   public readonly message: string
   public readonly url: string
+  public readonly gender?: string
+  public readonly reason?: string
 
-  constructor (result: boolean, url: string, error?: string) {
+  constructor (result: boolean, url: string, error?: string, gender?: string, reason?: string) {
     const message = typeof error === 'string' && error.length > 0
       ? `Prediction result is ${result} for image ${url}, error: ${error}`
       : `Prediction result is ${result} for image ${url}`
@@ -79,6 +87,8 @@ export class PredictionResponse {
     this.url = url
     this.result = result
     this.message = message
+    this.gender = gender
+    this.reason = reason
   }
 }
 

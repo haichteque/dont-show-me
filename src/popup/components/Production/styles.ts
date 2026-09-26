@@ -176,3 +176,32 @@ export const AdvancedRow = styled.div`
   display: flex;
   justify-content: space-between;
 `
+
+export const GenderRow = styled.div`
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+`
+
+export const GenderDetails = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+`
+
+export const SubCheckboxGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-left: 6px;
+  padding-left: 12px;
+  border-left: 2px solid ${props => props.theme.border};
+`
+
+export const MutedHint = styled.span`
+  color: ${props => props.theme.text.secondary};
+  font-size: 11px;
+  line-height: 1.4;
+`
+
