@@ -1,111 +1,126 @@
-# <img src="demo/images/logo-mark.svg" width="34" align="middle" alt=""> NSFW Filter
+# <img src="demo/images/logo-mark.svg" width="34" align="middle" alt=""> Gender & Content Filter
 
-> [!NOTE]
-> v3.0.0 released! See the release notes here: https://nsfwfilter.com/news/v3.0.0
+A privacy-focused, 100% client-side browser extension that filters explicit web content and conditionally blurs images based on detected gender and character category (real female/male, anime female/male).
 
-A free, open source, and privacy-focused browser extension to block "not safe for work" content.
+All classifications run locally in your browser using TensorFlow.js (WebGL with CPU WASM fallback). Zero telemetry, no remote servers, and zero images ever leave your device.
 
-Images are classified on your device with TensorFlow.js. Nothing is uploaded, and no data leaves your browser.
+---
 
-NSFW Filter ships two models you can switch between in the popup: a small, accurate Vision Transformer (ViT-384) that classifies images as safe or not safe (the default), and the original [NSFWJS](https://github.com/infinitered/nsfwjs) MobileNet model.
+## Why This Repository Exists
 
-Download now for [Google Chrome](https://chrome.google.com/webstore/detail/nsfw-filter/kmgagnlkckiamnenbpigfaljmanlbbhh).
+Standard web content filters are strictly binary: they detect nudity or adult content, but offer no mechanism to filter or blur images by subject presentation. 
 
-![Demo of NSFW Filter extension in action.](demo/images/demo.gif)
+This repository was created to add an on-device **5-class character & gender classification pipeline** directly behind the safety classifier:
+1. **Safety Pass**: Analyzes the image for explicit / adult content. If flagged, the image is blurred immediately.
+2. **Gender & Character Pass**: If the image is safe, it is evaluated by a multi-class model classifying into `real_male`, `real_female`, `anime_male`, `anime_female`, and `other`.
+3. **Selective Blurring**: Images matching the user's active preferences (e.g., blurring anime females, anime males, or specific classes) are automatically blurred with a clean `blur(25px)` effect.
 
-# Usage
+---
 
-You can install the extension from the [Chrome Web Store](https://chrome.google.com/webstore/detail/nsfw-filter/kmgagnlkckiamnenbpigfaljmanlbbhh) or [source](#development).
+## Features
 
-When you load web pages, NSFW Filter will first hide all images and only show those classified as safe.
+- **5-Class Recognition**: Distinguishes real humans and animated/illustrated characters by gender.
+- **Granular Controls**: Toggle protection, blur females, blur males, or select individual classes via the popup.
+- **Pure Local Inference**: Runs via TensorFlow.js in a Manifest V3 offscreen document on the GPU (WebGL).
+- **Fast & Lightweight**: Negligible latency per image without third-party network requests.
 
-Click the icon in your extensions tab to open the popup. From there you can turn protection on or off, adjust how strict the filter is, choose how flagged images are handled (blur, grayscale, or hide), pick which model does the classifying, and allow specific sites.
+---
 
-![NSFW Filter popup](demo/images/popup-window.png)
+## Replacing the Classifier with Your Own Model
 
-# Development
-
-Install dependencies by running:
-
-```bash
-npm install
+The gender classifier model is located in:
+```text
+dist/models/gender/
+├── model.json
+├── group1-shard1of3.bin
+├── group1-shard2of3.bin
+└── group1-shard3of3.bin
 ```
 
-Then build the project:
+To replace it with a custom model:
 
+1. **Place Model Files**: Convert your model to a TensorFlow.js GraphModel (see instructions below) and place the `model.json` and `.bin` shard files into `dist/models/gender/`.
+2. **Update Class Definitions**: Open `src/offscreen/classifiers/GenderClassifier.ts` and update `GENDER_CLASSES` to match your model's output labels:
+   ```typescript
+   export const GENDER_CLASSES: GenderClass[] = [
+     'real_male',
+     'real_female',
+     'anime_male',
+     'anime_female',
+     'other'
+   ]
+   ```
+3. **Adjust Resolution & Preprocessing** (if needed):
+   ```typescript
+   const INPUT_SIZE = 256 // update to match your model's expected input dimension
+   ```
+   If your model requires custom normalization (e.g., ImageNet mean/std), ensure it is applied either within the graph or inside `genderProbabilities()` in `GenderClassifier.ts`.
+4. **Rebuild**:
+   ```bash
+   npm run build
+   ```
+
+---
+
+## Converting Models: ONNX to TensorFlow.js
+
+If you have a trained model in `.onnx` format, convert it to a native TensorFlow.js GraphModel with these steps:
+
+### 1. Install Prerequisites
 ```bash
+pip install onnx onnx2tf tensorflow tensorflowjs
+```
+
+### 2. Convert ONNX to TensorFlow SavedModel
+Use [`onnx2tf`](https://github.com/PINTO0309/onnx2tf) to export an optimized SavedModel:
+```bash
+onnx2tf -in model.onnx -o saved_model/ -coion -nuo
+```
+
+> **Note for Windows users**: If using TensorFlow 2.21+, ensure `dilations` in depthwise convolution layers are 2D `[dh, dw]` rather than 4D to avoid rank errors during export.
+
+### 3. Convert SavedModel to TensorFlow.js GraphModel
+```bash
+tensorflowjs_converter \
+  --input_format=tf_saved_model \
+  --output_format=tfjs_graph_model \
+  --weight_shard_size_bytes=4194304 \
+  saved_model/ \
+  dist/models/gender/
+```
+
+This generates `model.json` alongside 4 MB `.bin` binary shard files ready for consumption by TensorFlow.js.
+
+---
+
+## Installation & Development
+
+### 1. Build from Source
+```bash
+# Install dependencies
+npm install
+
+# Build production bundle
 npm run build
 ```
 
-To run the tests:
+### 2. Load into Chrome / Chromium
+1. Navigate to `chrome://extensions` in your browser.
+2. Enable **Developer mode** (top-right toggle).
+3. Click **Load unpacked** and select the `dist/` directory from this repository.
 
+### 3. Testing
 ```bash
-npm run test
+# Run unit tests
+npm run test:unit
+
+# Run Playwright end-to-end verification (Bing Image Search)
+npm run test:gender:e2e
 ```
 
-To develop with live reload, start a watch build that rebuilds on every change:
+---
 
-```bash
-npm run dev
-```
+## Credits
 
-Then, in a separate terminal, launch Chromium with the extension loaded. It reloads automatically as the build updates:
-
-```bash
-npm run start:chrome
-```
-
-To load the build manually instead, open Google Chrome and open the **Extensions** page by navigating to `chrome://extensions` or by opening **Settings** and clicking **Extensions** from the bottom left.
-
-Enable **Developer Mode** by clicking the toggle switch.
-
-Click the **Load Unpacked** button and select the extension directory (`.../dist`).
-
-![Load extension to Chrome in Developer Mode.](./demo/images/install-instructions.png)
-
-# Contribute
-
-Please check the [**Contributor Guidelines**](https://github.com/nsfw-filter/nsfw-filter/blob/master/CONTRIBUTING.md) before contributing.
-
-Thanks to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)) for helping build and maintain NSFW Filter:
-
-<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
-<!-- prettier-ignore-start -->
-<!-- markdownlint-disable -->
-<table>
-  <tbody>
-    <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/YegorZaremba"><img src="https://avatars3.githubusercontent.com/u/31797554?v=4?s=100" width="100px;" alt="Yegor <3"/><br /><sub><b>Yegor <3</b></sub></a><br /><a href="https://github.com/nsfw-filter/nsfw-filter/commits?author=YegorZaremba" title="Code">💻</a> <a href="#design-YegorZaremba" title="Design">🎨</a> <a href="#ideas-YegorZaremba" title="Ideas, Planning, & Feedback">🤔</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="http://navendu.me"><img src="https://avatars1.githubusercontent.com/u/49474499?v=4?s=100" width="100px;" alt="Navendu Pottekkat"/><br /><sub><b>Navendu Pottekkat</b></sub></a><br /><a href="https://github.com/nsfw-filter/nsfw-filter/commits?author=navendu-pottekkat" title="Code">💻</a> <a href="#content-navendu-pottekkat" title="Content">🖋</a> <a href="https://github.com/nsfw-filter/nsfw-filter/commits?author=navendu-pottekkat" title="Documentation">📖</a> <a href="#design-navendu-pottekkat" title="Design">🎨</a> <a href="#ideas-navendu-pottekkat" title="Ideas, Planning, & Feedback">🤔</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/anonacc"><img src="https://avatars3.githubusercontent.com/u/64102225?v=4?s=100" width="100px;" alt="anonacc"/><br /><sub><b>anonacc</b></sub></a><br /><a href="https://github.com/nsfw-filter/nsfw-filter/issues?q=author%3Aanonacc" title="Bug reports">🐛</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/abhirammltr"><img src="https://avatars1.githubusercontent.com/u/32649851?v=4?s=100" width="100px;" alt="Abhiram V V"/><br /><sub><b>Abhiram V V</b></sub></a><br /><a href="https://github.com/nsfw-filter/nsfw-filter/commits?author=abhirammltr" title="Code">💻</a> <a href="https://github.com/nsfw-filter/nsfw-filter/issues?q=author%3Aabhirammltr" title="Bug reports">🐛</a> <a href="#ideas-abhirammltr" title="Ideas, Planning, & Feedback">🤔</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/yxlin118"><img src="https://avatars1.githubusercontent.com/u/54916304?v=4?s=100" width="100px;" alt="yxlin118"/><br /><sub><b>yxlin118</b></sub></a><br /><a href="https://github.com/nsfw-filter/nsfw-filter/issues?q=author%3Ayxlin118" title="Bug reports">🐛</a> <a href="#ideas-yxlin118" title="Ideas, Planning, & Feedback">🤔</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://clay.sh"><img src="https://avatars3.githubusercontent.com/u/16675291?v=4?s=100" width="100px;" alt="Clay McGinnis"/><br /><sub><b>Clay McGinnis</b></sub></a><br /><a href="https://github.com/nsfw-filter/nsfw-filter/pulls?q=is%3Apr+reviewed-by%3AClayMav" title="Reviewed Pull Requests">👀</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://www.youtube.com/channel/UCPGv2tVqEt6iBFnnMTjnRBA"><img src="https://avatars1.githubusercontent.com/u/6668371?v=4?s=100" width="100px;" alt="Brady Dowling"/><br /><sub><b>Brady Dowling</b></sub></a><br /><a href="#ideas-bradydowling" title="Ideas, Planning, & Feedback">🤔</a></td>
-    </tr>
-    <tr>
-      <td align="center" valign="top" width="14.28%"><a href="http://littlebluelabs.com"><img src="https://avatars2.githubusercontent.com/u/32261?v=4?s=100" width="100px;" alt="Mike Crittenden"/><br /><sub><b>Mike Crittenden</b></sub></a><br /><a href="https://github.com/nsfw-filter/nsfw-filter/commits?author=mikecrittenden" title="Documentation">📖</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/garfieldbanks"><img src="https://avatars3.githubusercontent.com/u/12904270?v=4?s=100" width="100px;" alt="garfieldbanks"/><br /><sub><b>garfieldbanks</b></sub></a><br /><a href="https://github.com/nsfw-filter/nsfw-filter/issues?q=author%3Agarfieldbanks" title="Bug reports">🐛</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/TitusRobyK"><img src="https://avatars1.githubusercontent.com/u/32787952?v=4?s=100" width="100px;" alt="Titus Roby K"/><br /><sub><b>Titus Roby K</b></sub></a><br /><a href="https://github.com/nsfw-filter/nsfw-filter/issues?q=author%3ATitusRobyK" title="Bug reports">🐛</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/hsusanoo"><img src="https://avatars2.githubusercontent.com/u/35850056?v=4?s=100" width="100px;" alt="Haitam"/><br /><sub><b>Haitam</b></sub></a><br /><a href="https://github.com/nsfw-filter/nsfw-filter/issues?q=author%3Ahsusanoo" title="Bug reports">🐛</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/lizhendong128"><img src="https://avatars3.githubusercontent.com/u/24618122?v=4?s=100" width="100px;" alt="lizhendong128"/><br /><sub><b>lizhendong128</b></sub></a><br /><a href="https://github.com/nsfw-filter/nsfw-filter/issues?q=author%3Alizhendong128" title="Bug reports">🐛</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Woctor-Dho"><img src="https://avatars3.githubusercontent.com/u/25572322?v=4?s=100" width="100px;" alt="Woctor-Dho"/><br /><sub><b>Woctor-Dho</b></sub></a><br /><a href="#ideas-Woctor-Dho" title="Ideas, Planning, & Feedback">🤔</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/miaokun-normal"><img src="https://avatars2.githubusercontent.com/u/67724210?v=4?s=100" width="100px;" alt="miaokun-normal"/><br /><sub><b>miaokun-normal</b></sub></a><br /><a href="https://github.com/nsfw-filter/nsfw-filter/issues?q=author%3Amiaokun-normal" title="Bug reports">🐛</a></td>
-    </tr>
-    <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://christopher-bradshaw.com"><img src="https://avatars1.githubusercontent.com/u/1205871?v=4?s=100" width="100px;" alt="Christopher Bradshaw"/><br /><sub><b>Christopher Bradshaw</b></sub></a><br /><a href="https://github.com/nsfw-filter/nsfw-filter/issues?q=author%3Akitsune7" title="Bug reports">🐛</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/wingman-jr-addon"><img src="https://avatars3.githubusercontent.com/u/55339824?v=4?s=100" width="100px;" alt="wingman-jr-addon"/><br /><sub><b>wingman-jr-addon</b></sub></a><br /><a href="#ideas-wingman-jr-addon" title="Ideas, Planning, & Feedback">🤔</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Andrewrick1"><img src="https://avatars2.githubusercontent.com/u/31154843?v=4?s=100" width="100px;" alt="Sagar paul"/><br /><sub><b>Sagar paul</b></sub></a><br /><a href="https://github.com/nsfw-filter/nsfw-filter/commits?author=Andrewrick1" title="Documentation">📖</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/govza"><img src="https://avatars0.githubusercontent.com/u/1425574?v=4?s=100" width="100px;" alt="Rasul"/><br /><sub><b>Rasul</b></sub></a><br /><a href="https://github.com/nsfw-filter/nsfw-filter/issues?q=author%3Agovza" title="Bug reports">🐛</a> <a href="https://github.com/nsfw-filter/nsfw-filter/commits?author=govza" title="Code">💻</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Gother01"><img src="https://avatars2.githubusercontent.com/u/65875436?v=4?s=100" width="100px;" alt="Aldulkadir Beceri"/><br /><sub><b>Aldulkadir Beceri</b></sub></a><br /><a href="https://github.com/nsfw-filter/nsfw-filter/issues?q=author%3AGother01" title="Bug reports">🐛</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://portfolio.silloi.com/"><img src="https://avatars.githubusercontent.com/u/38321101?v=4?s=100" width="100px;" alt="silloi"/><br /><sub><b>silloi</b></sub></a><br /><a href="#ideas-silloi" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/nsfw-filter/nsfw-filter/issues?q=author%3Asilloi" title="Bug reports">🐛</a> <a href="https://github.com/nsfw-filter/nsfw-filter/commits?author=silloi" title="Code">💻</a></td>
-    </tr>
-  </tbody>
-</table>
-
-<!-- markdownlint-restore -->
-<!-- prettier-ignore-end -->
-
-<!-- ALL-CONTRIBUTORS-LIST:END -->
-
-This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind are welcome!
+- This project is a downstream fork of [**NSFW Filter**](https://github.com/nsfw-filter/nsfw-filter), originally created by [Navendu Pottekkat](https://github.com/navendu-pottekkat), [Yegor Zaremba](https://github.com/YegorZaremba), and the NSFW Filter open-source contributors.
+- The default 5-class gender and anime classification weights are based on the [`gender4-whole-image-5class`](https://huggingface.co/haichteque/gender4-whole-image-5class) model by `haichteque`.
