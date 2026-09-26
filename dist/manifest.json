@@ -1,9 +1,9 @@
 {
-  "name": "NSFW Filter",
-  "version": "3.1.1",
-  "description": "Free, open source, and privacy-focused browser extension to block \"not safe for work\" content.",
-  "author": "Navendu Pottekkat",
-  "homepage_url": "https://nsfw-filter.com",
+  "name": "DontShowMe",
+  "version": "1.0.0",
+  "description": "Client-side browser extension to block explicit content and filter images based on gender and character category.",
+  "author": "haichteque",
+  "homepage_url": "https://github.com/haichteque/dont-show-me",
   "permissions": [
     "storage",
     "offscreen",
@@ -33,7 +33,7 @@
       "48": "images/icon48.png",
       "128": "images/icon128.png"
     },
-    "default_title": "NSFW Filter",
+    "default_title": "DontShowMe",
     "default_popup": "src/popup.html"
   },
   "options_ui": {

@@ -72,23 +72,23 @@ const light = {
 
 const dark = {
   bg: {
-    primary: '#1e262c',
-    surface: '#232d35'
+    primary: '#090c10',
+    surface: '#13171f'
   },
   text: {
     primary: '#ffffff',
-    secondary: '#9aa4b2'
+    secondary: '#8b94a5'
   },
-  // Lighter indigo so the accent keeps contrast on the dark background.
+  // High-contrast indigo accent for deep dark background
   accent: '#818cf8',
-  border: '#2c3742',
+  border: '#242b38',
   scrollbar: {
-    thumb: '#3a4651',
-    thumbHover: '#4a5765'
+    thumb: '#1c222e',
+    thumbHover: '#2a3345'
   },
   segmented: {
-    track: '#19222a',
-    thumb: '#323f4a'
+    track: '#0a0d14',
+    thumb: '#1f2635'
   }
 }
 

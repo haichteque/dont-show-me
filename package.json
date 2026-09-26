@@ -1,7 +1,7 @@
 {
-  "name": "nsfw-filter",
-  "version": "3.1.1",
-  "description": "Free, open source, and privacy-focused browser extension to block \"not safe for work\" content.",
+  "name": "dont-show-me",
+  "version": "1.0.0",
+  "description": "Client-side browser extension to block explicit content and filter images based on gender and character category.",
   "scripts": {
     "lint": "eslint .",
     "clean": "rimraf dist/src",
@@ -27,9 +27,9 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/nsfw-filter/nsfw-filter"
+    "url": "https://github.com/haichteque/dont-show-me"
   },
-  "homepage": "https://github.com/nsfw-filter/nsfw-filter",
+  "homepage": "https://github.com/haichteque/dont-show-me",
   "license": "GPL-3.0-only",
   "engines": {
     "node": ">=20.19"

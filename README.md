@@ -1,4 +1,4 @@
-# <img src="demo/images/logo-mark.svg" width="34" align="middle" alt=""> Gender & Content Filter
+# <img src="dist/images/icon32.png" width="28" align="middle" alt=""> DontShowMe (v1.0.0)
 
 A privacy-focused, 100% client-side browser extension that filters explicit web content and conditionally blurs images based on detected gender and character category (real female/male, anime female/male).
 
