@@ -13,7 +13,8 @@ import {
   TOGGLE_BLUR_FEMALE,
   TOGGLE_BLUR_MALE,
   SET_GENDER_CLASS,
-  SET_GENDER_FILTER_SETTINGS
+  SET_GENDER_FILTER_SETTINGS,
+  SET_GENDER_CONFIDENCE_THRESHOLD
 } from '../actions/settings/settingsTypes'
 
 export type SettingsState = {
@@ -43,6 +44,15 @@ export function settings (state = initialState, action: SettingsActionTypes): Se
   const hydrated = (state as Partial<SettingsState>).enabled !== undefined
   let s = hydrated ? state : { ...initialState, ...state }
   if (!s.genderFilter) s = { ...s, genderFilter: DEFAULT_GENDER_SETTINGS }
+  else if (s.genderFilter.confidenceThreshold === undefined) {
+    s = {
+      ...s,
+      genderFilter: {
+        ...s.genderFilter,
+        confidenceThreshold: DEFAULT_GENDER_SETTINGS.confidenceThreshold ?? 50
+      }
+    }
+  }
   // A model removed in a later version (or a downgrade) would leave an id the
   // offscreen document can't load; reset it so classification never wedges.
   if (!isTrainedModel(s.trainedModel)) s = { ...s, trainedModel: DEFAULT_TRAINED_MODEL }
@@ -107,6 +117,14 @@ export function settings (state = initialState, action: SettingsActionTypes): Se
       }
     case SET_GENDER_FILTER_SETTINGS:
       return { ...s, genderFilter: action.payload.genderFilter }
+    case SET_GENDER_CONFIDENCE_THRESHOLD:
+      return {
+        ...s,
+        genderFilter: {
+          ...s.genderFilter,
+          confidenceThreshold: action.payload.confidenceThreshold
+        }
+      }
     default:
       return s
   }

@@ -96,6 +96,7 @@ async function runE2E() {
     enabled: true,
     blurFemale: true,
     blurMale: false,
+    confidenceThreshold: 50,
     classes: {
       real_male: false,
       real_female: true,
@@ -171,6 +172,7 @@ async function runE2E() {
     enabled: true,
     blurFemale: false,
     blurMale: true,
+    confidenceThreshold: 50,
     classes: {
       real_male: true,
       real_female: false,

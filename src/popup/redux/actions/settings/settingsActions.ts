@@ -13,7 +13,8 @@ import {
   TOGGLE_BLUR_FEMALE,
   TOGGLE_BLUR_MALE,
   SET_GENDER_CLASS,
-  SET_GENDER_FILTER_SETTINGS
+  SET_GENDER_FILTER_SETTINGS,
+  SET_GENDER_CONFIDENCE_THRESHOLD
 } from './settingsTypes'
 
 export const toggleLogging = () => ({ type: TOGGLE_LOGGING } as const)
@@ -53,3 +54,9 @@ export const setGenderFilterSettings = (genderFilter: GenderFilterSettings) => (
   type: SET_GENDER_FILTER_SETTINGS,
   payload: { genderFilter }
 } as const)
+
+export const setGenderConfidenceThreshold = (confidenceThreshold: number) => ({
+  type: SET_GENDER_CONFIDENCE_THRESHOLD,
+  payload: { confidenceThreshold }
+} as const)
+

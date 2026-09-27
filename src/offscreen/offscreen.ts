@@ -13,6 +13,7 @@
 import { enableProdMode, env as tfEnv, getBackend, setBackend, tensor1d, tidy } from '@tensorflow/tfjs'
 import { setWasmPaths } from '@tensorflow/tfjs-backend-wasm'
 
+import { isSvg } from '../utils/isSvg'
 import { Logger } from '../utils/Logger'
 import {
   OffscreenClassifyResponse,
@@ -330,6 +331,10 @@ const loadImage = async (url: string, label: string): Promise<HTMLImageElement> 
 }
 
 const classify = async (url: string, label: string): Promise<OffscreenClassifyResponse> => {
+  if (isSvg(url) || isSvg(label)) {
+    return { result: false }
+  }
+
   ensureUp()
   const image = await loadImage(url, label)
 

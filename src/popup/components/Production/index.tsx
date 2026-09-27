@@ -14,7 +14,8 @@ import {
   toggleGenderFilter,
   toggleBlurFemale,
   toggleBlurMale,
-  setGenderClass
+  setGenderClass,
+  setGenderConfidenceThreshold
 } from '../../redux/actions/settings/index'
 import { RootState } from '../../redux/reducers'
 import { SettingsState } from '../../redux/reducers/settings'
@@ -148,6 +149,24 @@ export const Production: React.FC = () => {
             >
               Blur Males (real &amp; anime)
             </Checkbox>
+
+            <Field style={{ marginTop: 8, marginBottom: 4 }}>
+              <FieldHead>
+                <FieldLabel style={{ fontSize: 13 }}>Confidence threshold</FieldLabel>
+                <FieldValue>{genderFilter.confidenceThreshold ?? 50}%</FieldValue>
+              </FieldHead>
+              <Slider
+                min={20}
+                max={95}
+                value={genderFilter.confidenceThreshold ?? 50}
+                tooltip={{ open: false }}
+                onChange={(value: number) => dispatch(setGenderConfidenceThreshold(value))}
+              />
+              <SliderEnds>
+                <span>Sensitive</span>
+                <span>Strict</span>
+              </SliderEnds>
+            </Field>
 
             <div>
               <AdvancedToggle

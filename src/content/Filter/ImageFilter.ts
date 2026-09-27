@@ -1,3 +1,4 @@
+import { isSvg } from '../../utils/isSvg'
 import { PredictionRequest } from '../../utils/messages'
 
 import { Filter, FilterSettings } from './Filter'
@@ -47,6 +48,11 @@ export class ImageFilter extends Filter implements IImageFilter {
       // an empty image has nothing to filter, and a later real src re-triggers
       // analysis via srcAttribute.
       if (image.dataset.nsfwFilterStatus === 'processing') this.revealImage(image)
+      return
+    }
+
+    if (isSvg(image.src) || (Boolean(image.currentSrc) && isSvg(image.currentSrc))) {
+      this.revealImage(image)
       return
     }
 

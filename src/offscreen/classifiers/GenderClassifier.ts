@@ -25,6 +25,7 @@ export type GenderFilterSettings = {
   enabled: boolean
   blurFemale: boolean
   blurMale: boolean
+  confidenceThreshold?: number
   classes: {
     real_male: boolean
     real_female: boolean
@@ -38,6 +39,7 @@ export const DEFAULT_GENDER_SETTINGS: GenderFilterSettings = {
   enabled: false,
   blurFemale: true,
   blurMale: false,
+  confidenceThreshold: 50,
   classes: {
     real_male: false,
     real_female: true,
@@ -145,9 +147,10 @@ export class GenderClassifier {
 
     const predictedClass = GENDER_CLASSES[maxIdx]
     const confidence = maxProb
+    const threshold = (settings.confidenceThreshold ?? 50) / 100
 
     let shouldBlur = false
-    if (settings.enabled) {
+    if (settings.enabled && confidence >= threshold) {
       if (settings.blurFemale && (predictedClass === 'real_female' || predictedClass === 'anime_female')) {
         shouldBlur = true
       } else if (settings.blurMale && (predictedClass === 'real_male' || predictedClass === 'anime_male')) {
@@ -158,7 +161,7 @@ export class GenderClassifier {
     }
 
     if (this.logger.status) {
-      this.logger.log(`Gender prediction is ${predictedClass} (${(confidence * 100).toFixed(1)}%) blur=${shouldBlur} in ${elapsed}ms for ${url ?? 'image'}`)
+      this.logger.log(`Gender prediction is ${predictedClass} (${(confidence * 100).toFixed(1)}%) blur=${shouldBlur} (threshold=${(threshold * 100).toFixed(0)}%) in ${elapsed}ms for ${url ?? 'image'}`)
     }
 
     return {

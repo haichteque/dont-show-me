@@ -1,3 +1,4 @@
+import { isSvg } from '../../utils/isSvg'
 import { PredictionRequest } from '../../utils/messages'
 
 import { backgroundImageUrls } from './backgroundImageValue'
@@ -264,7 +265,7 @@ export class BackgroundImageFilter extends Filter implements IBackgroundImageFil
     // has to be read with it lifted. Both writes land in this task, before paint.
     if (state !== undefined) this.restore(element)
 
-    const urls = backgroundImageUrls(getComputedStyle(element).backgroundImage)
+    const urls = backgroundImageUrls(getComputedStyle(element).backgroundImage).filter(url => !isSvg(url))
     const key = urls.join(' ')
     if (urls.length === 0) {
       if (state !== undefined) {

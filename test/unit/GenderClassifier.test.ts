@@ -10,6 +10,7 @@ import {
 } from '../../src/offscreen/classifiers/GenderClassifier'
 import {
   setGenderClass,
+  setGenderConfidenceThreshold,
   setGenderFilterSettings,
   toggleBlurFemale,
   toggleBlurMale,
@@ -48,6 +49,7 @@ describe('Gender Filter Redux & Settings', () => {
     expect(DEFAULT_GENDER_SETTINGS.enabled).toBe(false)
     expect(DEFAULT_GENDER_SETTINGS.blurFemale).toBe(true)
     expect(DEFAULT_GENDER_SETTINGS.blurMale).toBe(false)
+    expect(DEFAULT_GENDER_SETTINGS.confidenceThreshold).toBe(50)
     expect(DEFAULT_GENDER_SETTINGS.classes.real_female).toBe(true)
     expect(DEFAULT_GENDER_SETTINGS.classes.anime_female).toBe(true)
     expect(DEFAULT_GENDER_SETTINGS.classes.real_male).toBe(false)
@@ -129,6 +131,14 @@ describe('Gender Filter Redux & Settings', () => {
     const updated = settings(initial, setGenderFilterSettings(custom))
     expect(updated.genderFilter).toEqual(custom)
   })
+
+  it('handles SET_GENDER_CONFIDENCE_THRESHOLD', () => {
+    const initial: SettingsState = settings(undefined, { type: '@@INIT' } as any)
+    expect(initial.genderFilter.confidenceThreshold).toBe(50)
+
+    const updated = settings(initial, setGenderConfidenceThreshold(75))
+    expect(updated.genderFilter.confidenceThreshold).toBe(75)
+  })
 })
 
 describe('GenderClassifier inference logic', () => {
@@ -206,5 +216,21 @@ describe('GenderClassifier inference logic', () => {
     }
     const predMaleOnly = await classifier.predict(canvas, maleOnlySettings)
     expect(predMaleOnly.shouldBlur).toBe(false)
+
+    // When confidence is 0.75 and threshold is set higher (e.g. 80%), shouldBlur must be false
+    const strictThresholdSettings: GenderFilterSettings = {
+      ...femaleEnabledSettings,
+      confidenceThreshold: 80
+    }
+    const predStrict = await classifier.predict(canvas, strictThresholdSettings)
+    expect(predStrict.shouldBlur).toBe(false)
+
+    // When confidence is 0.75 and threshold is 70%, shouldBlur must be true
+    const lenientThresholdSettings: GenderFilterSettings = {
+      ...femaleEnabledSettings,
+      confidenceThreshold: 70
+    }
+    const predLenient = await classifier.predict(canvas, lenientThresholdSettings)
+    expect(predLenient.shouldBlur).toBe(true)
   })
 })
