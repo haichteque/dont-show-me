@@ -53,7 +53,17 @@ describe('content => ImageFilter => analyzeImage', () => {
 
   test('treats MIN_IMAGE_SIZE itself as too small', () => {
     const spy = stubAnalyze()
-    const image = makeImage(41, 41)
+    const image = makeImage(64, 64)
+
+    new ImageFilter().analyzeImage(image)
+
+    expect(image.dataset.nsfwFilterStatus).toBe('sfw')
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  test('bypasses decorative icons and default avatar patterns', () => {
+    const spy = stubAnalyze()
+    const image = makeImage(120, 120, 'https://example.com/images/default_avatar.png')
 
     new ImageFilter().analyzeImage(image)
 
