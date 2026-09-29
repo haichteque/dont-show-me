@@ -397,8 +397,11 @@ chrome.runtime.onMessage.addListener((
       if (pendingGenderFilter?.enabled && !genderClassifierLoaded) {
         await ensureGenderClassifier()
       }
-    }).catch(() => undefined)
-    return
+    })
+      .then(() => sendResponse({ result: true }))
+      .catch((error: Error) => sendResponse({ result: false, error: error?.message ?? String(error) }))
+
+    return true
   }
 
   if (message.type === 'CLASSIFY') {

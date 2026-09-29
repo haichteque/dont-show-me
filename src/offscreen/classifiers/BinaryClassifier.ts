@@ -10,6 +10,7 @@ import {
 
 import { ILogger } from '../../utils/Logger'
 import { TrainedModel } from '../../utils/models'
+import { getSkinToneRatio } from '../../utils/skinTone'
 import { withTimeout } from '../../utils/withTimeout'
 
 import { Classifier, ClassifierSettings, MODEL_LOAD_TIMEOUT, WARMUP_TIMEOUT } from './Classifier'
@@ -31,11 +32,8 @@ const NORM_STD = 0.5
 // Map the shared 1..100 strictness slider to a single decision threshold on the
 // NSFW probability. Same direction as the 5-class model: low slider = lenient
 // (high threshold, block only the obvious), high slider = strict (low threshold).
-// Endpoints picked so the default (55) lands near the model's own best-F1 point
-// (~0.52 from the benchmark); calibrated against the converted weights, not the
-// PyTorch numbers, since conversion can shift probabilities slightly.
 const LENIENT_THRESHOLD = 0.98
-const STRICT_THRESHOLD = 0.15
+const STRICT_THRESHOLD = 0.25
 
 const strictnessToThreshold = (value: number): number => {
   const clamped = Math.min(100, Math.max(1, value))
@@ -105,9 +103,18 @@ export class BinaryClassifier implements Classifier {
       prob.dispose()
     }
 
-    const result = probability >= this.threshold
+    const skinRatio = getSkinToneRatio(image)
+    // Non-human creatures (aliens, cartoons, icons) have low skin-tone coverage (< 20%).
+    // For these images, apply a high-confidence safeguard threshold (0.94) so ambiguous
+    // unclad fantasy creatures like Ben 10 aliens are not falsely blocked as human nudity.
+    let effectiveThreshold = this.threshold
+    if (skinRatio < 0.20) {
+      effectiveThreshold = Math.max(effectiveThreshold, 0.94)
+    }
+
+    const result = probability >= effectiveThreshold
     if (this.logger.status) {
-      this.logger.log(`IMG prediction (ViT) is NSFW ${probability.toFixed(4)} (>= ${this.threshold.toFixed(4)} = ${result}) for ${url}`)
+      this.logger.log(`IMG prediction (ViT) is NSFW ${probability.toFixed(4)} (>= ${effectiveThreshold.toFixed(4)} [skin: ${(skinRatio * 100).toFixed(1)}%] = ${result}) for ${url}`)
     }
     return result
   }

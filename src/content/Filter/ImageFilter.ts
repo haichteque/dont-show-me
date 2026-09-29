@@ -1,3 +1,4 @@
+import { isIconOrPlaceholder } from '../../utils/isIconOrPlaceholder'
 import { isSvg } from '../../utils/isSvg'
 import { PredictionRequest } from '../../utils/messages'
 
@@ -21,7 +22,7 @@ export class ImageFilter extends Filter implements IImageFilter {
 
   constructor () {
     super()
-    this.MIN_IMAGE_SIZE = 41
+    this.MIN_IMAGE_SIZE = 64
     this.epoch = 0
     this.unhidden = new WeakSet()
   }
@@ -52,6 +53,11 @@ export class ImageFilter extends Filter implements IImageFilter {
     }
 
     if (isSvg(image.src) || (Boolean(image.currentSrc) && isSvg(image.currentSrc))) {
+      this.revealImage(image)
+      return
+    }
+
+    if (isIconOrPlaceholder(image)) {
       this.revealImage(image)
       return
     }

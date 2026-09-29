@@ -8,6 +8,7 @@ import {
 } from '@tensorflow/tfjs'
 
 import { ILogger } from '../../utils/Logger'
+import { getSkinToneRatio } from '../../utils/skinTone'
 import { withTimeout } from '../../utils/withTimeout'
 import { MODEL_LOAD_TIMEOUT, WARMUP_TIMEOUT } from './Classifier'
 
@@ -149,24 +150,37 @@ export class GenderClassifier {
     const confidence = maxProb
     const threshold = (settings.confidenceThreshold ?? 50) / 100
 
+    const skinRatio = getSkinToneRatio(image)
+
+    let finalClass = predictedClass
+    let finalConfidence = confidence
+
+    // Non-human creatures (aliens, monsters, robots, icons) have low human skin tones (< 18%).
+    // Reclassify them as 'other' so that fantasy illustrations (like Ben 10 aliens)
+    // are not falsely blurred under real/anime gender categories.
+    if (skinRatio < 0.18 && predictedClass !== 'other') {
+      finalClass = 'other'
+      finalConfidence = Math.max(probs.other, 0.70)
+    }
+
     let shouldBlur = false
-    if (settings.enabled && confidence >= threshold) {
-      if (settings.blurFemale && (predictedClass === 'real_female' || predictedClass === 'anime_female')) {
+    if (settings.enabled && finalConfidence >= threshold) {
+      if (settings.blurFemale && (finalClass === 'real_female' || finalClass === 'anime_female')) {
         shouldBlur = true
-      } else if (settings.blurMale && (predictedClass === 'real_male' || predictedClass === 'anime_male')) {
+      } else if (settings.blurMale && (finalClass === 'real_male' || finalClass === 'anime_male')) {
         shouldBlur = true
-      } else if (settings.classes && settings.classes[predictedClass]) {
+      } else if (settings.classes && settings.classes[finalClass]) {
         shouldBlur = true
       }
     }
 
     if (this.logger.status) {
-      this.logger.log(`Gender prediction is ${predictedClass} (${(confidence * 100).toFixed(1)}%) blur=${shouldBlur} (threshold=${(threshold * 100).toFixed(0)}%) in ${elapsed}ms for ${url ?? 'image'}`)
+      this.logger.log(`Gender prediction is ${finalClass} (original: ${predictedClass}, ${(finalConfidence * 100).toFixed(1)}%, skin: ${(skinRatio * 100).toFixed(1)}%) blur=${shouldBlur} (threshold=${(threshold * 100).toFixed(0)}%) in ${elapsed}ms for ${url ?? 'image'}`)
     }
 
     return {
-      predictedClass,
-      confidence,
+      predictedClass: finalClass,
+      confidence: finalConfidence,
       probabilities: probs,
       shouldBlur
     }

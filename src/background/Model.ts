@@ -1,6 +1,7 @@
 import { NSFWJS, PredictionType } from 'nsfwjs/core'
 
 import { ILogger } from '../utils/Logger'
+import { getSkinToneRatio } from '../utils/skinTone'
 
 export type ModelSettings = {
   filterStrictness: number
@@ -62,11 +63,13 @@ export class Model implements IModel {
   }
 
   public async predictImage (image: HTMLImageElement, url: string): Promise<boolean> {
+    const skinRatio = getSkinToneRatio(image)
+
     if (this.logger.status) {
       const start = new Date().getTime()
 
       const prediction = await this.model.classify(image, 2)
-      const { result, className, probability } = this.handlePrediction(prediction)
+      const { result, className, probability } = this.handlePrediction(prediction, skinRatio)
 
       const end = new Date().getTime()
       this.logger.log(`IMG prediction (${end - start} ms) is ${className} ${probability} for ${url}`)
@@ -74,12 +77,26 @@ export class Model implements IModel {
       return result
     } else {
       const prediction = await this.model.classify(image, 2)
-      return this.handlePrediction(prediction).result
+      return this.handlePrediction(prediction, skinRatio).result
     }
   }
 
-  private handlePrediction (prediction: PredictionType[]): { result: boolean, className: string, probability: number } {
+  private handlePrediction (prediction: PredictionType[], skinRatio = 0.5): { result: boolean, className: string, probability: number } {
     const [{ className: cn1, probability: pb1 }, { className: cn2, probability: pb2 }] = prediction
+
+    // For images with low skin-tone coverage (< 20%) such as non-human aliens,
+    // cartoons, and icons, require high confidence (> 0.94) and bypass secondary weak filters.
+    if (skinRatio < 0.20) {
+      const isExplicitPorn = cn1 === 'Porn' && pb1 > 0.85
+      const isExplicitHentai = cn1 === 'Hentai' && pb1 > 0.94
+      const result = isExplicitPorn || isExplicitHentai
+      return ({ result, className: cn1, probability: pb1 })
+    }
+
+    // If the runner-up class is Drawing or Neutral (SFW classes), require high confidence (> 0.90) for Hentai.
+    if (cn1 === 'Hentai' && (cn2 === 'Drawing' || cn2 === 'Neutral') && pb1 < 0.90) {
+      return ({ result: false, className: cn1, probability: pb1 })
+    }
 
     const result1 = this.FILTER_LIST.has(cn1) && pb1 > (this.firstFilterPercentages.get(cn1) as number)
     if (result1) return ({ result: result1, className: cn1, probability: pb1 })
