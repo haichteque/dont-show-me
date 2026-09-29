@@ -26,36 +26,11 @@ All classifications run locally in your browser using TensorFlow.js (WebGL with 
 
 ---
 
-## Download Here
 
-Get the latest release of **DontShowMe**:
-
-- **Google Chrome Web Store** *(Store listing submission)*:  
-  [![Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-Add_to_Chrome-blue?style=for-the-badge&logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/<extension-id>)  
-  *Once published, click "Add to Chrome" to install automatically with auto-updates.*
-
-- **Direct ZIP Package (GitHub Releases)**:  
-  Download the latest pre-packaged, verified build directly from GitHub:  
-  👉 **[Download dontshowme-v1.0.0.zip](https://github.com/haichteque/dont-show-me/releases/latest/download/dontshowme-v1.0.0.zip)**  
-  *(For manual installation in Chrome via Developer Mode)*
-
----
 
 ## How to Install
 
-### Method 1: Chrome Web Store (Recommended)
-1. Open the [DontShowMe Chrome Web Store Page](https://chromewebstore.google.com/detail/<extension-id>).
-2. Click **Add to Chrome**.
-3. Confirm the prompt to add the extension.
-4. Pin **DontShowMe** to your Chrome toolbar for easy access to settings and filtering controls.
 
-### Method 2: Install Pre-Packaged ZIP
-1. Download `dontshowme-v1.0.0.zip` from [Download Here](#download-here) or [Releases](https://github.com/haichteque/dont-show-me/releases).
-2. Extract the ZIP file to a permanent directory on your computer.
-3. In Google Chrome, go to `chrome://extensions` in the address bar.
-4. Enable **Developer mode** using the toggle switch in the top-right corner.
-5. Click the **Load unpacked** button in the top-left corner.
-6. Select the extracted folder (the directory containing `manifest.json`).
 
 ### Method 3: Build & Install from Source
 If you are developing or customizing the model:
