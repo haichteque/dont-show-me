@@ -11,3 +11,8 @@ TODO.md
 
 # Local model-comparison benchmark harness — kept out of the repo
 benchmark/
+
+# Build and extension packaging artifacts
+package/
+web-ext-artifacts/
+release/

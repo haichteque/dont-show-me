@@ -1,31 +1,43 @@
 name: Continuous integration
 
 on:
+  push:
+    branches: [ master, main ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, main ]
 
 jobs:
   test:
-    name: Run unit and e2e tests
+    name: Run lint, unit, image pipeline, and packaging checks
     runs-on: ubuntu-latest
     env:
       CI: 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      # Must not skip puppeteer's browser download: the e2e tests launch the
-      # Chrome it installs here (test/e2e/helpers.js).
+
       - name: Install dependencies
         run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
       - name: Run lint checks
         run: npm run lint
+
       - name: Build
         run: npm run build
-        env:
-          NODE_OPTIONS: --openssl-legacy-provider  # webpack 4 needs it on Node 17+
-      - name: Run unit and e2e tests
-        run: xvfb-run --auto-servernum npm test  # headful Chrome needs a display
+
+      - name: Run unit tests
+        run: npm run test:unit
+
+      - name: Run image classification tests (NSFW, SFW, Gender, False Positives)
+        run: xvfb-run --auto-servernum npm run test:images
+
+      - name: Verify Chrome Web Store packaging
+        run: npm run package:verify
