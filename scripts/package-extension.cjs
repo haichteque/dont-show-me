@@ -146,10 +146,15 @@ function verifyPackage(zipPath) {
 
   // Verify archive table of contents to ensure manifest.json is at root
   try {
-    const listOutput = execSync(`tar -tf "${zipPath}"`, { encoding: 'utf8' });
+    let listOutput = '';
+    try {
+      listOutput = execSync(`tar -tf "${zipPath}"`, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+    } catch {
+      listOutput = execSync(`unzip -l "${zipPath}"`, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+    }
     const lines = listOutput.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
 
-    if (!lines.includes('manifest.json')) {
+    if (!lines.some(l => l.split(/\s+/).pop() === 'manifest.json' || l === 'manifest.json')) {
       logError('manifest.json is NOT at the root level of the ZIP archive!');
       process.exit(1);
     }
