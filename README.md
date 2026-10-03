@@ -1,53 +1,38 @@
-# <img src="dist/images/icon32.png" width="28" align="middle" alt=""> DontShowMe (v1.0.0)
+![cover](demo/images/cover.png)
 
-A privacy-focused, 100% client-side browser extension that filters explicit web content and conditionally blurs images based on detected gender and character category (real female/male, anime female/male).
+# 🙈 DontShowMe - 100% Client-Side Web Content & Gender Filter
 
-All classifications run locally in your browser using TensorFlow.js (WebGL with CPU WASM fallback). Zero telemetry, no remote servers, and zero images ever leave your device.
+> Filter explicit adult content, blur anime and real character categories, and protect your browsing privacy — 100% on-device with local TensorFlow.js. Zero telemetry. No remote servers. Free & Open Source.
 
----
-
-## Table of Contents
-
-- [Introduction](#-dontshowme-v100)
-- [Download Here](#download-here)
-- [How to Install](#how-to-install)
-  - [Method 1: Install Pre-Packaged ZIP](#method-1-install-pre-packaged-zip)
-  - [Method 2: Build & Install from Source](#method-2-build--install-from-source)
-- [Features](#features)
-- [Why This Extension Exists](#why-this-extension-exists)
-- [Filtering Pipeline & Architecture](#filtering-pipeline--architecture)
-- [Replacing the Classifier with Your Own Model](#replacing-the-classifier-with-your-own-model)
-- [Converting Models: ONNX to TensorFlow.js](#converting-models-onnx-to-tensorflowjs)
-- [Development & Automated Testing](#development--automated-testing)
-- [Packaging for Google Chrome Web Store](#packaging-for-google-chrome-web-store)
-- [Credits & Attribution](#credits--attribution)
-- [License](#license)
+[![Open Source](https://img.shields.io/badge/open%20source-brightgreen)]()
+[![GPL-3.0 License](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
+[![Privacy First](https://img.shields.io/badge/privacy-100%25%20local-success)]()
+[![Zero Telemetry](https://img.shields.io/badge/telemetry-zero-success)]()
+[![Offline Ready](https://img.shields.io/badge/offline-ready-blueviolet)]()
+[![Manifest V3](https://img.shields.io/badge/manifest-v3-4285F4?logo=googlechrome&logoColor=white)]()
+[![TensorFlow.js](https://img.shields.io/badge/TensorFlow.js-4.22-FF6F00?logo=tensorflow&logoColor=white)]()
+[![Built with React](https://img.shields.io/badge/built%20with-React%2019-61DAFB?logo=react&logoColor=white)]()
+[![GitHub Release](https://img.shields.io/github/v/release/haichteque/dont-show-me?color=orange&logo=github)](https://github.com/haichteque/dont-show-me/releases/latest)
 
 ---
 
-## Download Here
+## 📥 Download & How to Install
 
-Get the latest release of **DontShowMe**:
+### Quick Download
+👉 **[Download Pre-Packaged ZIP (dontshowme-v1.0.0.zip)](https://github.com/haichteque/dont-show-me/releases/latest/download/dontshowme-v1.0.0.zip)**  
+*Store-ready, pre-compiled Manifest V3 package. No Node.js or build tools required.*
 
-- **Direct ZIP Package (GitHub Releases)**:  
-  Download the latest pre-packaged, verified build directly from GitHub:  
-  👉 **[Download dontshowme-v1.0.0.zip](https://github.com/haichteque/dont-show-me/releases/latest/download/dontshowme-v1.0.0.zip)**  
-  *(For manual installation in Chrome via Developer Mode)*
-
----
-
-## How to Install
-
-### Method 1: Install Pre-Packaged ZIP
-1. Download `dontshowme-v1.0.0.zip` from [Download Here](#download-here) or [Releases](https://github.com/haichteque/dont-show-me/releases).
-2. Extract the ZIP file to a permanent directory on your computer.
-3. In Google Chrome, go to `chrome://extensions` in the address bar.
+### Method 1: Install Pre-Packaged ZIP (Recommended)
+1. Download [`dontshowme-v1.0.0.zip`](https://github.com/haichteque/dont-show-me/releases/latest/download/dontshowme-v1.0.0.zip) from the latest release.
+2. Extract the ZIP file to a permanent folder on your computer.
+3. Open Google Chrome (or any Chromium browser such as Brave, Edge, Opera, or Vivaldi) and navigate to `chrome://extensions`.
 4. Enable **Developer mode** using the toggle switch in the top-right corner.
 5. Click the **Load unpacked** button in the top-left corner.
 6. Select the extracted folder (the directory containing `manifest.json`).
+7. Pin **DontShowMe** (🙈) to your browser toolbar for quick access to filtering controls and statistics.
 
 ### Method 2: Build & Install from Source
-If you are developing or customizing the model:
+If you are developing, customizing the classification model, or contributing:
 
 ```bash
 # 1. Clone repository
@@ -62,59 +47,112 @@ npm run build
 
 # 4. Load unpacked in Chrome
 # Open chrome://extensions, enable "Developer mode", click "Load unpacked",
-# and select the dist/ directory in this repo.
+# and select the dist/ directory.
 ```
 
 ---
 
-## Features
+## 💡 Why DontShowMe?
 
-- **5-Class Recognition**: Accurately classifies safe images into `real_male`, `real_female`, `anime_male`, `anime_female`, and `other`.
-- **Dual-Stage Safety Pass**: ViT Vision Transformer and MobileNet v1.2 inspect images for explicit adult content, hentai, and provocative imagery.
-- **Granular Controls**: Toggle overall protection, filter by gender (blur females, blur males), and tune individual classes or confidence thresholds via the popup interface.
-- **Pure Local Inference**: Runs via TensorFlow.js in a Manifest V3 offscreen document on the GPU (WebGL) with automatic CPU WebAssembly fallback.
-- **Privacy-First**: Zero tracking, zero telemetry, no external server calls. Images are analyzed purely in-memory.
+Most traditional content filtering tools rely on crude domain blocklists or send your private browsing history and image URLs to remote third-party cloud APIs for analysis.
 
----
+**DontShowMe** takes a completely different, privacy-first approach:
 
-## Why This Extension Exists
-
-Standard web content filters are strictly binary: they detect nudity or adult content, but offer no mechanism to filter or blur images by subject presentation. 
-
-This repository introduces an on-device **5-class character & gender classification pipeline** directly behind the safety classifier:
-1. **Safety Pass**: Analyzes the image for explicit / adult content. If flagged, the image is blurred immediately.
-2. **Gender & Character Pass**: If the image is safe, it is evaluated by a multi-class model classifying into `real_male`, `real_female`, `anime_male`, `anime_female`, and `other`.
-3. **Selective Blurring**: Images matching the user's active preferences (e.g., blurring anime females, anime males, or specific classes) are automatically blurred with a clean `blur(25px)` effect.
+- **100% In-Browser Machine Learning**: Neural network inferences execute entirely on your local GPU/CPU via TensorFlow.js (WebGL with automatic CPU WASM SIMD fallback). Zero bytes of image data, URLs, or metadata ever leave your computer.
+- **5-Class Fine-Grained Subject Categorization**: Goes far beyond binary adult flags by accurately classifying safe imagery into `real_male`, `real_female`, `anime_male`, `anime_female`, and `other`.
+- **False-Positive Mitigation**: Specially tuned heuristics eliminate false-positive blurring on UI buttons, icons, abstract shapes, and fictional alien characters.
+- **Complete Autonomy & Offline Capability**: Operates fully offline without accounts, subscriptions, cloud tokens, or network latency.
 
 ---
 
-## Filtering Pipeline & Architecture
+## 🎬 Demo
 
+![demo](demo/images/demo.gif)
+
+---
+
+## 📊 Comparison Matrix
+
+| Capability / Feature | Traditional Ad Blockers | Cloud-Based NSFW Filters | **DontShowMe** |
+|:---|:---:|:---:|:---|
+| **Privacy & Telemetry** | Domain-level only | Uploads image URLs to cloud servers | **100% On-Device (Zero Telemetry)** |
+| **Gender & Character Filtering** | ❌ None | ❌ None | **✔ 5-Class Granular Detection** |
+| **Anime & Illustrated Support** | ❌ None | ⚠️ High false-positive rate | **✔ Dedicated Anime Classifier** |
+| **Explicit Adult Filtering (NSFW)** | ⚠️ Static URL/domain lists | Cloud AI | **✔ Local Dual-Pass (ViT + MobileNet)** |
+| **Custom Confidence Tuning** | ❌ None | ❌ Hardcoded thresholds | **✔ Real-Time Slider & Class Toggles** |
+| **Offline Operation** | ✔ Yes | ❌ Requires Cloud / API | **✔ WebGL + WASM (Works Offline)** |
+| **Hardware Acceleration** | N/A | Server-side | **⚡ In-Browser GPU / SIMD WASM** |
+| **License & Price** | Mixed | Freemium / Paid Subscription | **✔ 100% Free & Open Source (GPL-3.0)** |
+
+---
+
+## 🖼️ Interface Showcase
+
+| Modern Dark-Mode Popup | Selective Filtering in Action |
+|:---:|:---:|
+| ![Popup Preview](demo/images/popup-preview.png) | ![Filtering Showcase](demo/images/filtering-showcase.png) |
+| *Intuitive popup with protection toggle, strictness slider, effect switcher (Blur, Gray, Hide), and confidence tuning* | *Intelligent blur application: target categories filtered seamlessly while non-person objects remain untouched* |
+
+<div align="center">
+  <img src="demo/images/options-preview.png" width="90%" alt="Options Page Preview" />
+  <p><em>Advanced Options &amp; Settings page for custom site allowlisting, sensitivity presets, and theme settings</em></p>
+</div>
+
+---
+
+## 🚀 Features
+
+### 🛡️ Dual-Stage NSFW Protection
+- **ViT (Vision Transformer) & MobileNet v1.2**: Two-tier safety evaluation classifies adult, explicit, hentai, and provocative images.
+- **Zero-Flicker Shielding**: Media is shielded upon DOM insertion and revealed only once verified safe, preventing accidental flash of unwanted imagery.
+
+### 👤 5-Class Gender & Character Engine
+- **Granular Classification**: Classifies safe images into `real_male`, `real_female`, `anime_male`, `anime_female`, and `other`.
+- **Independent Toggles**: Filter exclusively anime imagery, real portraits, females, males, or configure custom class combinations.
+
+### 🎛️ Interactive Controls & Confidence Tuning
+- **Confidence Threshold Slider**: Fine-tune classification confidence from 20% to 95% depending on whether you prefer sensitive or strict filtering.
+- **Multiple Visual Effects**: Choose between Gaussian **Blur**, **Grayscale**, or full DOM element **Hide**.
+- **Per-Site Allowlisting**: Whitelist trusted sites with one click directly from the popup.
+
+### ⚡ Performance & WebGL Acceleration
+- **Offscreen Worker Architecture**: Heavy neural network computations are offloaded to a dedicated Chrome Manifest V3 offscreen document, keeping web browsing fluid and stutter-free.
+- **Hardware Acceleration**: Automatic WebGL acceleration on supported GPUs with seamless fallback to CPU WebAssembly with SIMD.
+
+---
+
+## 🛠️ Filtering Pipeline & Architecture
+
+```mermaid
+flowchart TD
+    IMG["Web Page Image Discovered"] --> SHIELD["Shield Image (Opacity / Hidden)"]
+    SHIELD --> PASS1{"Stage 1: Safety Pass\n(ViT / MobileNet)"}
+    
+    PASS1 -- "Explicit / NSFW" --> BLUR1["Apply Filter Effect\n(Blur / Hide / Gray)"]
+    PASS1 -- "Safe Content" --> PASS2{"Stage 2: 5-Class Classifier\n(real / anime / male / female)"}
+    
+    PASS2 -- "Matches Active Toggles\n(e.g., Anime Female ≥ 65%)" --> BLUR2["Apply Filter Effect\n(Selective Blur)"]
+    PASS2 -- "Safe / Allowed Category" --> REVEAL["Reveal Image Cleanly\n(Untouched)"]
 ```
-[Web Page Image]
-       │
-       ▼
-[Stage 1: Safety Classifier (ViT_NSFW_384 / MobileNet)]
-       │
-   Is Explicit?
-  ├─── YES ───► [Blur Image (Adult/NSFW Content)]
-  └─── NO  ───► [Stage 2: 5-Class Gender Classifier]
-                        │
-                  Predict Class:
-                  • real_male
-                  • real_female
-                  • anime_male
-                  • anime_female
-                  • other
-                        │
-                Matches Active Filters?
-               ├─── YES ───► [Blur Image (blur(25px))]
-               └─── NO  ───► [Display Image Untouched]
-```
 
 ---
 
-## Replacing the Classifier with Your Own Model
+## 🧰 Tech Stack
+
+| Technology | Purpose |
+|---|---|
+| [TensorFlow.js](https://www.tensorflow.org/js) | In-browser machine learning execution (WebGL & CPU WASM) |
+| [NSFWJS](https://github.com/infinitered/nsfwjs) | MobileNet v1.2 and ViT models for explicit content classification |
+| [Custom GraphModel](https://huggingface.co/haichteque/gender4-whole-image-5class) | High-precision 5-class gender and anime character classification |
+| [React 19](https://react.dev/) & [Redux](https://redux.js.org/) | Reactive state synchronization across popup, content script, and background worker |
+| [Ant Design](https://ant.design/) | Modern dark-themed popup controls, segmented buttons, and sliders |
+| [Chrome Manifest V3](https://developer.chrome.com/docs/extensions/mv3/) | Service workers, offscreen documents, and content script pipeline |
+
+**Zero backend. Zero tracking. Zero telemetry. 100% browser-native.**
+
+---
+
+## 🔬 Replacing the Classifier with Your Own Model
 
 The gender classifier model is located in:
 ```text
@@ -125,9 +163,9 @@ dist/models/gender/
 └── group1-shard3of3.bin
 ```
 
-To replace it with a custom model:
+To substitute your own trained model:
 
-1. **Place Model Files**: Convert your model to a TensorFlow.js GraphModel (see instructions below) and place the `model.json` and `.bin` shard files into `dist/models/gender/`.
+1. **Place Model Files**: Export your model to a TensorFlow.js GraphModel and place the `model.json` and `.bin` shard files in `dist/models/gender/`.
 2. **Update Class Definitions**: Open `src/offscreen/classifiers/GenderClassifier.ts` and update `GENDER_CLASSES` to match your model's output labels:
    ```typescript
    export const GENDER_CLASSES: GenderClass[] = [
@@ -138,11 +176,10 @@ To replace it with a custom model:
      'other'
    ]
    ```
-3. **Adjust Resolution & Preprocessing** (if needed):
+3. **Adjust Resolution & Preprocessing**:
    ```typescript
    const INPUT_SIZE = 256 // update to match your model's expected input dimension
    ```
-   If your model requires custom normalization (e.g., ImageNet mean/std), ensure it is applied either within the graph or inside `genderProbabilities()` in `GenderClassifier.ts`.
 4. **Rebuild**:
    ```bash
    npm run build
@@ -150,9 +187,9 @@ To replace it with a custom model:
 
 ---
 
-## Converting Models: ONNX to TensorFlow.js
+## 🔄 Converting Models: ONNX to TensorFlow.js
 
-If you have a trained model in `.onnx` format, convert it to a native TensorFlow.js GraphModel with these steps:
+If you have a model trained in PyTorch or `.onnx` format, convert it to a native TensorFlow.js GraphModel with these steps:
 
 ### 1. Install Prerequisites
 ```bash
@@ -177,11 +214,11 @@ tensorflowjs_converter \
   dist/models/gender/
 ```
 
-This generates `model.json` alongside 4 MB `.bin` binary shard files ready for consumption by TensorFlow.js.
+This creates `model.json` alongside 4 MB `.bin` binary shard files ready for consumption by TensorFlow.js.
 
 ---
 
-## Development & Automated Testing
+## 🧪 Development & Automated Testing
 
 ### Running Tests
 Every push and pull request triggers continuous integration testing through GitHub Actions.
@@ -204,15 +241,15 @@ npm run test:gender:e2e
 ### CI/CD Pipeline
 Continuous integration is configured in `.github/workflows/integrate.yml`:
 - Runs on every `push` and `pull_request` to `master` and `main`.
-- Validates linting (`npm run lint`).
-- Builds the production bundle (`npm run build`).
+- Validates code linting (`npm run lint`).
+- Compiles the production bundle (`npm run build`).
 - Executes unit tests (`npm run test:unit`).
-- Evaluates the real image test suite (`npm run test:images`) across all categories.
-- Validates the Chrome Web Store extension package (`npm run package:verify`).
+- Evaluates the image test suite (`npm run test:images`) across all categories.
+- Validates Chrome Web Store compliance (`npm run package:verify`).
 
 ---
 
-## Packaging for Google Chrome Web Store
+## 📦 Packaging for Google Chrome Web Store
 
 To produce a production-ready `.zip` package acceptable for uploading to the Chrome Web Store developer dashboard:
 
@@ -229,13 +266,13 @@ This script:
 
 ---
 
-## Credits & Attribution
+## 👥 Credits & Attribution
 
 - This project is a downstream fork of [**NSFW Filter**](https://github.com/nsfw-filter/nsfw-filter), originally created by [Navendu Pottekkat](https://github.com/navendu-pottekkat), [Yegor Zaremba](https://github.com/YegorZaremba), and the NSFW Filter open-source contributors.
 - The default 5-class gender and anime classification weights are based on the [`gender4-whole-image-5class`](https://huggingface.co/haichteque/gender4-whole-image-5class) model by `haichteque`.
 
 ---
 
-## License
+## 📄 License
 
 This project is licensed under the [GNU General Public License v3.0 (GPL-3.0)](LICENSE).
