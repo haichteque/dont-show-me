@@ -11,9 +11,8 @@ All classifications run locally in your browser using TensorFlow.js (WebGL with 
 - [Introduction](#-dontshowme-v100)
 - [Download Here](#download-here)
 - [How to Install](#how-to-install)
-  - [Method 1: Chrome Web Store (Recommended)](#method-1-chrome-web-store-recommended)
-  - [Method 2: Install Pre-Packaged ZIP](#method-2-install-pre-packaged-zip)
-  - [Method 3: Build & Install from Source](#method-3-build--install-from-source)
+  - [Method 1: Install Pre-Packaged ZIP](#method-1-install-pre-packaged-zip)
+  - [Method 2: Build & Install from Source](#method-2-build--install-from-source)
 - [Features](#features)
 - [Why This Extension Exists](#why-this-extension-exists)
 - [Filtering Pipeline & Architecture](#filtering-pipeline--architecture)
@@ -26,13 +25,28 @@ All classifications run locally in your browser using TensorFlow.js (WebGL with 
 
 ---
 
+## Download Here
 
+Get the latest release of **DontShowMe**:
+
+- **Direct ZIP Package (GitHub Releases)**:  
+  Download the latest pre-packaged, verified build directly from GitHub:  
+  👉 **[Download dontshowme-v1.0.0.zip](https://github.com/haichteque/dont-show-me/releases/latest/download/dontshowme-v1.0.0.zip)**  
+  *(For manual installation in Chrome via Developer Mode)*
+
+---
 
 ## How to Install
 
+### Method 1: Install Pre-Packaged ZIP
+1. Download `dontshowme-v1.0.0.zip` from [Download Here](#download-here) or [Releases](https://github.com/haichteque/dont-show-me/releases).
+2. Extract the ZIP file to a permanent directory on your computer.
+3. In Google Chrome, go to `chrome://extensions` in the address bar.
+4. Enable **Developer mode** using the toggle switch in the top-right corner.
+5. Click the **Load unpacked** button in the top-left corner.
+6. Select the extracted folder (the directory containing `manifest.json`).
 
-
-### Method 3: Build & Install from Source
+### Method 2: Build & Install from Source
 If you are developing or customizing the model:
 
 ```bash
